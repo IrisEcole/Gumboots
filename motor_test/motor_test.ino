@@ -9,9 +9,10 @@ const int RIGHT_REVERSE = 4;
 const int LEFT_SPEED    = 6;
 const int LEFT_FORWARD  = 5;
 const int LEFT_REVERSE  = 7;
- 
+
 void setup() {
   // TODO: Define the modes of your pins (hint: they should be OUTPUT)
+  // delay(10000);
   pinMode(RIGHT_SPEED, OUTPUT);
   pinMode(RIGHT_FORWARD, OUTPUT);
   pinMode(RIGHT_REVERSE, OUTPUT);
@@ -45,7 +46,7 @@ void loop() {
 
   turnRight();
   delay(100);
-  testMotors();
+  testMotors(); 
   // E.g.
   // driveForward():
   // delay(100);
@@ -98,6 +99,7 @@ void turnLeft() {
   digitalWrite(LEFT_REVERSE, LOW);
   analogWrite(LEFT_SPEED, 255);
 }
+
  
  
 //-------------------------------------------------------

@@ -9,6 +9,8 @@
 #define IN3 10 //in3 at pin D11
 #define IN4 11 //in4 at pin D10
 
+
+
 // IR1 will be at the front left of the robot
 // IR2 will be at the front right
 #define IR1 8 // define what pin the IR sensor 1 is connected to on the Arduino Nano
