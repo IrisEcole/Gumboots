@@ -1,6 +1,19 @@
 
 
 // IR1 will be at the front  of the robot
+// #include <NewPing.h>
+
+#define LEFT_PING_PIN  12  // Arduino pin tied to both trigger and echo pins on the ultrasonic sensor.
+#define CENTER_PING_PIN  12  // Arduino pin tied to both trigger and echo pins on the ultrasonic sensor.
+#define RIGHT_PING_PIN  12  // Arduino pin tied to both trigger and echo pins on the ultrasonic sensor.
+
+
+#define MAX_DISTANCE 200 // Maximum distance we want to ping for (in centimeters). Maximum sensor distance is rated at 400-500cm.
+
+// NewPing sonarLeft(PING_PIN, LEFT_PING_PIN, MAX_DISTANCE);
+// NewPing sonarCenter(PING_PIN, CENTER_PING_PIN, MAX_DISTANCE);
+// NewPing sonarRight(PING_PIN, PING_PIN, MAX_DISTANCE);
+enum State { TurnLeft, TurnRight, Reverse, Attack, Search, Search_Go_Forward_A_Bit };
 
 
  const int IR1 = 8;
@@ -13,11 +26,11 @@ const int LEFT_FORWARD  = 5;
 const int LEFT_REVERSE  = 7;
 
 
-#define REVERSE_DURATION  200 //The idea of those is that 
-#define TURN_DURATION     300
-#define SEARCH_LIMIT      200 // Get rid of that when we have attack
+#define REVERSE_DURATION  1 //The idea of those is that 
+#define TURN_DURATION     2
+#define SEARCH_LIMIT      25 // Get rid of that when we have attack
+#define ATTACK_DURATION      5//
 
-enum State { TurnLeft, TurnRight, Reverse, Attack, Search };
 State state = Search;
 State nextState = Search;
 int stateCount = 0;
@@ -35,12 +48,12 @@ void setup() {
   pinMode(LEFT_REVERSE, OUTPUT);
   //pinMode(IR2, INPUT);  // define this pin as an INPUT
   Serial.begin(9600);
-  stateCOuntLimit = SEARCH_LIMIT;
+  stateCountLimit = SEARCH_LIMIT;
+
 }
 
 
 void loop() {
-  delay(1000);
   // driveForward();
   // testMotors();
   // delay(800);
@@ -48,15 +61,33 @@ void loop() {
   // driveBackward();
   // delay(800);
   // testMotors();
+    int val1; 
 
-  int val1; 
-  
+  // int left_distance;
+  // int right_distance;
+  // int center_distance;
+  // left_distance = sonarLeft.ping_cm();
+  // center_distance = sonarCenter.ping_cm();
+  // right_distance = sonarRight.ping_cm();
+  // Serial.print("Ping Left: ");
+  // Serial.print(left_distance); // Send ping, get distance in cm and print result (0 = outside set distance range)
+  // Serial.println("cm");
+  // Serial.print("Ping Center: ");
+  // Serial.print(center_distance); // Send ping, get distance in cm and print result (0 = outside set distance range)
+  // Serial.println("cm");
+  // Serial.print("Ping RIght: ");
+  // Serial.print(right_distance); // Send ping, get distance in cm and print result (0 = outside set distance range)
+  // Serial.println("cm");
   val1 = digitalRead(IR1);  //This should be the white line sensor in the front;
+
+
    switch(state) {
         case Search:
         //Right now it can't really find anything so this code is just gonna turn infinitely so I added a limit to it before it moves foward
-            turnLeft();
             if (++stateCount < stateCountLimit) {
+            turnLeft();
+
+            } else {
                               state = Search_Go_Forward_A_Bit;
                stateCount = 0;
                stateCountLimit = SEARCH_LIMIT;
@@ -64,9 +95,11 @@ void loop() {
         break;
                 case Search_Go_Forward_A_Bit:
         //Happens when it turned a bunch and didnt find anything, no need for that I thinl
-            driveForward();
             if (++stateCount < stateCountLimit) {
-                state = search;
+            driveForward();
+
+            } else {
+                              state = Search;
                stateCount = 0;
                stateCountLimit = SEARCH_LIMIT;
             }
@@ -76,7 +109,7 @@ void loop() {
             if (++stateCount < stateCountLimit) {
                 turnLeft();
             } else {
-               state = search;
+               state = Search;
                stateCount = 0;
                stateCountLimit = SEARCH_LIMIT;
             }
@@ -85,7 +118,7 @@ void loop() {
             if (++stateCount < stateCountLimit) {
                 turnRight();
             } else {
-              state = search;
+              state = Search;
                stateCount = 0;
                stateCountLimit = SEARCH_LIMIT;
             }
@@ -101,24 +134,53 @@ void loop() {
                 stateCountLimit = TURN_DURATION;
             }
         break;
-        // case Attack:
-        //     if (++stateCount < stateCountLimit) {
+        case Attack:
+            if (++stateCount < stateCountLimit) {
+            driveForward();
+            } else {
+                state = Search;
+                nextState = Search;
+            }
 
-        //     } else {
-        //         state = Search;
-        //         nextState = Search;
-        //     }
-
-        // break;
+        break;
     }
-   if (val1 == HIGH) {
-        stateCount = 0;
-
+   if (val1 == 0) {
         nextState = TurnRight;
         state = Reverse;
         stateCount = 0;
         stateCountLimit = REVERSE_DURATION;
   }
+
+// //If detects on right sensor but not center; turn left
+//      if (left_distance  == HIGH && center_distance == LOW ) {
+//         stateCount = 0;
+//         nextState = Search;
+//         state = TurnLeft;
+//         stateCount = 0;
+//         stateCountLimit = TURN_DURATION;
+//   }
+// //If detects on center sensor atttaaaccck
+//      if (center_distance == HIGH) {
+//         state = Attack;
+//         stateCount = 0;
+//         stateCountLimit = ATTACK_DURATION;
+//   }
+
+// //If detects on right sensor but not center; turn right
+//      if (right_distance == HIGH && center_distance == LOW ) {
+//         stateCount = 0;
+//         nextState = Search;
+//         state = TurnLeft;
+//         stateCount = 0;
+//         stateCountLimit = TURN_DURATION;
+//   }
+
+Serial.print("IRR an state");
+Serial.print(val1);
+Serial.print(state);
+
+
+ // testMotors();
 
 }
 
