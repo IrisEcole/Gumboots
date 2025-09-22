@@ -1,22 +1,25 @@
 
 
 // IR1 will be at the front  of the robot
-// #include <NewPing.h>
+#include <NewPing.h>
 
-#define LEFT_PING_PIN  12  // Arduino pin tied to both trigger and echo pins on the ultrasonic sensor.
-#define CENTER_PING_PIN  12  // Arduino pin tied to both trigger and echo pins on the ultrasonic sensor.
-#define RIGHT_PING_PIN  12  // Arduino pin tied to both trigger and echo pins on the ultrasonic sensor.
-
-
-#define MAX_DISTANCE 200 // Maximum distance we want to ping for (in centimeters). Maximum sensor distance is rated at 400-500cm.
-
-// NewPing sonarLeft(PING_PIN, LEFT_PING_PIN, MAX_DISTANCE);
-// NewPing sonarCenter(PING_PIN, CENTER_PING_PIN, MAX_DISTANCE);
-// NewPing sonarRight(PING_PIN, PING_PIN, MAX_DISTANCE);
-enum State { TurnLeft, TurnRight, Reverse, Attack, Search, Search_Go_Forward_A_Bit };
+#define LEFT_PING_PIN  18 // Arduino pin tied to both trigger and echo pins on the ultrasonic sensor.
+#define LEFT_PING_PIN_ECHO  19  // Arduino pin tied to both trigger and echo pins on the ultrasonic sensor.
+#define CENTER_PING_PIN  9  // Arduino pin tied to both trigger and echo pins on the ultrasonic sensor.
+#define CENTER_PING_PIN_ECHO  10  // Arduino pin tied to both trigger and echo pins on the ultrasonic sensor.
+#define RIGHT_PING_PIN  16  // Arduino pin tied to both trigger and echo pins on the ultrasonic sensor.
+#define RIGHT_PING_PIN_ECHO 17   // Arduino pin tied to both trigger and echo pins on the ultrasonic sensor.
 
 
- const int IR1 = 8;
+#define MAX_DISTANCE 80// Maximum distance we want to ping for (in centimeters). Maximum sensor distance is rated at 400-500cm.
+
+NewPing sonarLeft(LEFT_PING_PIN, LEFT_PING_PIN_ECHO, MAX_DISTANCE);
+NewPing sonarCenter(CENTER_PING_PIN, CENTER_PING_PIN_ECHO, MAX_DISTANCE);
+NewPing sonarRight(RIGHT_PING_PIN, RIGHT_PING_PIN_ECHO,  MAX_DISTANCE);
+enum State { TurnLeft, TurnRight, Reverse, Attack, Search, Search_Go_Forward_A_Bit, ForwardEscape };
+
+
+const int IR1 = 8;
 
 const int RIGHT_SPEED   = 3;
 const int RIGHT_FORWARD = 2;
@@ -24,21 +27,22 @@ const int RIGHT_REVERSE = 4;
 const int LEFT_SPEED    = 6;
 const int LEFT_FORWARD  = 5;
 const int LEFT_REVERSE  = 7;
+ int started = 0;
 
+#define REVERSE_DURATION  6 //The idea of those is that 
+#define TURN_DURATION     4
+#define SEARCH_LIMIT      6 // Get rid of that when we have attack
+#define ATTACK_DURATION      15536//
+#define STARTFORWARD    10
 
-#define REVERSE_DURATION  1 //The idea of those is that 
-#define TURN_DURATION     2
-#define SEARCH_LIMIT      25 // Get rid of that when we have attack
-#define ATTACK_DURATION      5//
-
-State state = Search;
+State state = Search_Go_Forward_A_Bit;
 State nextState = Search;
 int stateCount = 0;
 int stateCountLimit = 0;
 
 void setup() {
   // put your setup code here, to run once:
-  pinMode(IR1, INPUT);  // define this pin as an INPUT
+  // pinMode(IR1, INPUT);  // define this pin as an INPUT
    pinMode(RIGHT_SPEED, OUTPUT);
   pinMode(RIGHT_FORWARD, OUTPUT);
   pinMode(RIGHT_REVERSE, OUTPUT);
@@ -46,9 +50,14 @@ void setup() {
   pinMode(LEFT_SPEED, OUTPUT);
   pinMode(LEFT_FORWARD, OUTPUT);
   pinMode(LEFT_REVERSE, OUTPUT);
-  //pinMode(IR2, INPUT);  // define this pin as an INPUT
+
+    // pindmode(A0, INPUT);
+    // pindmode(LEFT_PING_PIN_ECHO, INPUT);
+  // pinMode(IR2, INPUT);  // define this pin as an INPUT
   Serial.begin(9600);
-  stateCountLimit = SEARCH_LIMIT;
+  stateCountLimit = STARTFORWARD;
+  state = Search_Go_Forward_A_Bit;
+
 
 }
 
@@ -62,35 +71,93 @@ void loop() {
   // delay(800);
   // testMotors();
     int val1; 
+    if (!started) {
+    delay(3500);
+  started =1;
+      }
 
-  // int left_distance;
-  // int right_distance;
-  // int center_distance;
-  // left_distance = sonarLeft.ping_cm();
-  // center_distance = sonarCenter.ping_cm();
-  // right_distance = sonarRight.ping_cm();
-  // Serial.print("Ping Left: ");
-  // Serial.print(left_distance); // Send ping, get distance in cm and print result (0 = outside set distance range)
-  // Serial.println("cm");
-  // Serial.print("Ping Center: ");
-  // Serial.print(center_distance); // Send ping, get distance in cm and print result (0 = outside set distance range)
-  // Serial.println("cm");
-  // Serial.print("Ping RIght: ");
-  // Serial.print(right_distance); // Send ping, get distance in cm and print result (0 = outside set distance range)
-  // Serial.println("cm");
+  long left_distance;
+  long right_distance;
+  long center_distance;
+  left_distance = sonarLeft.ping_cm();
+  delay(30);
+  center_distance = sonarCenter.ping_cm();
+  delay(30);
+  right_distance = sonarRight.ping_cm();
+    delay(30);
+  Serial.print("Ping Left: ");
+  Serial.print(left_distance); // Send ping, get distance in cm and print result (0 = outside set distance range)
+  Serial.println("cm");
+  Serial.print("Ping Center: ");
+  Serial.print(center_distance); // Send ping, get distance in cm and print result (0 = outside set distance range)
+  Serial.println("cm");
+  Serial.print("Ping RIght: ");
+  Serial.print(right_distance); // Send ping, get distance in cm and print result (0 = outside set distance range)
+  Serial.println("cm");
   val1 = digitalRead(IR1);  //This should be the white line sensor in the front;
+    //val1 = 0;
+
+     
+  // else if (val2 == 1) {
+  //       nextState = TurnRight;
+  //       state = ForwardEscape;
+  //       stateCount = 0;
+  //       stateCountLimit = REVERSE_DURATION;
+  // }
+if (val1 == 1) {
+        nextState = TurnRight;
+        state = Reverse;
+        stateCount = 0;
+        stateCountLimit = REVERSE_DURATION;
+  } else if (center_distance > 0) {
+      //If detects on center sensor atttaaaccck
+  // Serial.println("TRYING TO SWITCH TO ATTACK");
+        state = Attack;
+        stateCount = 0;
+        stateCountLimit = ATTACK_DURATION;
+  }else if (right_distance != 0 && center_distance == 0) {
+      //If detects on right sensor but not center; turn right
+
+        stateCount = 0;
+        nextState = Search;
+        state = TurnRight;
+        stateCount = 0;
+        stateCountLimit = TURN_DURATION;
+  }  else if (left_distance  != 0 && center_distance == 0 ) {
+    //If detects on right sensor but not center; turn left
+    
+        stateCount = 0;
+        nextState = Search;
+        state = TurnLeft;
+        stateCount = 0;
+        stateCountLimit = TURN_DURATION;
+  }
 
 
+
+Serial.print("IRR before switch ");
+Serial.print(val1);
+Serial.print("\n");
+Serial.print("State before  switch : ");
+Serial.print(state);
+Serial.print("\n");
+Serial.print("State count before switch ");
+Serial.print(stateCount);
+Serial.print("\n");
+Serial.print("State count limit before  switch : ");
+Serial.print(stateCountLimit);
+Serial.print("\n");
    switch(state) {
         case Search:
         //Right now it can't really find anything so this code is just gonna turn infinitely so I added a limit to it before it moves foward
             if (++stateCount < stateCountLimit) {
-            turnLeft();
+            turnLeftSearch();
+            // driveForward();
 
             } else {
-                              state = Search_Go_Forward_A_Bit;
+                state = Search_Go_Forward_A_Bit;
                stateCount = 0;
-               stateCountLimit = SEARCH_LIMIT;
+               stateCountLimit = STARTFORWARD;
             }
         break;
                 case Search_Go_Forward_A_Bit:
@@ -134,50 +201,36 @@ void loop() {
                 stateCountLimit = TURN_DURATION;
             }
         break;
+        case ForwardEscape:
+            if (++stateCount < stateCountLimit) {
+            attack();
+
+            } else {
+                              state = Search;
+               stateCount = 0;
+               stateCountLimit = SEARCH_LIMIT;
+            }
+        break;
         case Attack:
             if (++stateCount < stateCountLimit) {
-            driveForward();
+            attack();
             } else {
                 state = Search;
                 nextState = Search;
+                
             }
 
         break;
     }
-   if (val1 == 0) {
-        nextState = TurnRight;
-        state = Reverse;
-        stateCount = 0;
-        stateCountLimit = REVERSE_DURATION;
-  }
 
-// //If detects on right sensor but not center; turn left
-//      if (left_distance  == HIGH && center_distance == LOW ) {
-//         stateCount = 0;
-//         nextState = Search;
-//         state = TurnLeft;
-//         stateCount = 0;
-//         stateCountLimit = TURN_DURATION;
-//   }
-// //If detects on center sensor atttaaaccck
-//      if (center_distance == HIGH) {
-//         state = Attack;
-//         stateCount = 0;
-//         stateCountLimit = ATTACK_DURATION;
-//   }
 
-// //If detects on right sensor but not center; turn right
-//      if (right_distance == HIGH && center_distance == LOW ) {
-//         stateCount = 0;
-//         nextState = Search;
-//         state = TurnLeft;
-//         stateCount = 0;
-//         stateCountLimit = TURN_DURATION;
-//   }
-
-Serial.print("IRR an state");
-Serial.print(val1);
-Serial.print(state);
+// Serial.print("IRR after switch ");
+// Serial.print(val1);
+// Serial.print("\n");
+// Serial.print("State after switch : ");
+// Serial.print(state);
+// Serial.print("\n");
+// Serial.print(state);
 
 
  // testMotors();
@@ -186,6 +239,17 @@ Serial.print(state);
 
 
 void driveForward() {
+  // TODO: Complete this function
+  digitalWrite(RIGHT_FORWARD, HIGH);
+  digitalWrite(RIGHT_REVERSE, LOW);
+  analogWrite(RIGHT_SPEED, 140);
+
+  digitalWrite(LEFT_FORWARD, HIGH);
+  digitalWrite(LEFT_REVERSE, LOW);
+  analogWrite(LEFT_SPEED, 140);
+}
+
+void attack() {
   // TODO: Complete this function
   digitalWrite(RIGHT_FORWARD, HIGH);
   digitalWrite(RIGHT_REVERSE, LOW);
@@ -207,6 +271,28 @@ void driveBackward() {
   analogWrite(LEFT_SPEED, 255);
 }
  
+void turnRightSearch() {
+  // TODO: Complete this function
+  digitalWrite(RIGHT_FORWARD, HIGH);
+  digitalWrite(RIGHT_REVERSE, LOW);
+  analogWrite(RIGHT_SPEED, 140);
+
+  digitalWrite(LEFT_FORWARD, LOW);
+  digitalWrite(LEFT_REVERSE, HIGH);
+  analogWrite(LEFT_SPEED, 140);
+}
+ 
+void turnLeftSearch() {
+  // TODO: Complete this function
+  digitalWrite(RIGHT_FORWARD, LOW);
+  digitalWrite(RIGHT_REVERSE, HIGH);
+  analogWrite(RIGHT_SPEED, 120);
+
+  digitalWrite(LEFT_FORWARD, HIGH);
+  digitalWrite(LEFT_REVERSE, LOW);
+  analogWrite(LEFT_SPEED, 120);
+}
+
 void turnRight() {
   // TODO: Complete this function
   digitalWrite(RIGHT_FORWARD, HIGH);

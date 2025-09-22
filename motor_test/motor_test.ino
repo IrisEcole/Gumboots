@@ -34,19 +34,19 @@ void loop() {
   testMotors();
   delay(1000);
 
-  driveBackward();
-  delay(100);
-  testMotors();
-  delay(1000);
+  // driveBackward();
+  // delay(100);
+  // testMotors();
+  // delay(1000);
 
-  turnLeft();
-  delay(100);
-  testMotors();
-  delay(1000);
+  // turnLeft();
+  // delay(100);
+  // testMotors();
+  // delay(1000);
 
-  turnRight();
-  delay(100);
-  testMotors(); 
+  // turnRight();
+  // delay(100);
+  // testMotors(); 
   // E.g.
   // driveForward():
   // delay(100);
